@@ -1,0 +1,24 @@
+{
+  "name": "kafkaish",
+  "version": "0.0.1",
+  "description": "A publish-subscribe messaging system with durable topics on MongoDB. A poor-man's Apache Kafka, if you like.",
+  "main": "index.js",
+  "scripts": {
+    "compile": "./node_modules/.bin/babel --presets es2015 -d lib/ src/",
+    "test": "npm run compile && ./node_modules/mocha/bin/mocha",
+    "prepublish": "npm run test"
+  },
+  "devDependencies": {
+    "assert": "^1.4.1",
+    "babel-core": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
+    "husky": "^0.13.3",
+    "lint-staged": "^3.4.0",
+    "mocha": "^3.2.0",
+    "prettier": "^0.22.0"
+  },
+  "dependencies": {
+    "babel-cli": "^6.24.1",
+    "mongodb": "^2.2.25"
+  }
+}
