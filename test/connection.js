@@ -1,5 +1,5 @@
 import assert from 'assert'
-import Connection from '../../lib/connection'
+import Connection from '../lib/connection'
 
 describe('connection', function() {
 

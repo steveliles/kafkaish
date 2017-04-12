@@ -1,7 +1,7 @@
 import Connection from './connection'
 
-const Kafkaesque = function(uri,opts={}){
-  return new Connection(uri,opts).connect()
+const Kafkaish = function(uri,opts={}){
+  return new Connection(uri,opts)
 }
 
-export default Kafkaesque
+export default Kafkaish
