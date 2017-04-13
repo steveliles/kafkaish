@@ -1,6 +1,14 @@
 # Kafkaish
 
-An experiment with an Apache-Kafka-like publish/subscribe mechanism based on MongoDB.
+Stability: _very unstable / experimental._
+
+Durable message queues are handy when you only have a few consumers, but they're a bit unwieldy and wasteful when you have many consumers or consumers come and go over time.
+
+Message topics are handy when you have large/varying numbers of subscribers that come and go, but sometimes you need each consumer to receive all messages regardless whether they were connected when the message was dispatched.
+
+Kafka topics have a nice mix of the properties of topics and queues - publish/subscribe plus guaranteed delivery.
+
+This lib is an experiment with an Apache-Kafka-like publish/subscribe mechanism based on MongoDB.
 
 Q. Why not just use Kafka?
 
