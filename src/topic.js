@@ -53,6 +53,7 @@ class Topic extends EventEmitter {
         })
       cursor.addCursorFlag('tailable',true)
       cursor.addCursorFlag('awaitData',true)
+      cursor.addCursorFlag('noCursorTimeout',true)
       const next = (err,doc) => {
         if (err) {
           this.emit('error',err)
@@ -213,7 +214,7 @@ class Topic extends EventEmitter {
       callback(null, {_id:since}, collection)
     } else {
       collection
-        .find({}, {timeout: false})
+        .find({})
         .sort({_id:-1})
         .limit(1)
         .nextObject((err, doc) => {
