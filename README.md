@@ -76,22 +76,22 @@ topic.subscribe(null,{},function(ev,msg){
 })
 ```
 
-Subscribe a durable subscription receive specific events. You can unsubscribe/disconnect and come back later to collect events that occurred while you were away:
+Subscribe a durable subscription to receive specific events. You can unsubscribe/disconnect and come back later to collect events that occurred while you were away:
 
 ```javascript
-topic.subscribe(null,{name:'durable-subscriber-1'},function(ev,msg,ack){
-  // ... do some cool stuff
-  // ...
+topic.subscribe('some-event',{name:'durable-subscriber-1'},function(ev,msg,ack){
+  // here we'll see any events published from now on.
+  // if we disconnect and re-connect with "replay:true"
   ack() // acknowledge this message so we don't replay it if we re-connect
 })
 ```
 
-Subscribe a durable subscription receive specific events, and replay the backlog of events that already occurred. You can unsubscribe/disconnect and come back later to collect events that occurred while you were away:
+Subscribe a durable subscription to receive specific events, replaying the backlog of events that already occurred. You can unsubscribe/disconnect and come back later to collect events that occurred while you were away:
 
 ```javascript
-topic.subscribe(null,{name:'durable-subscriber-1',replay:true},function(ev,msg,ack){
-  // ... do some cool stuff
-  // ...
-  ack() // acknowledge this message so we don't replay it if we re-connect
+topic.subscribe('some-event',{name:'durable-subscriber-1',replay:true},function(ev,msg,ack){
+  // here we'll see all events that already occurred before settling in to receive
+  // events in real-time as they are published. We need to ack() each event.
+  ack()
 })
 ```
