@@ -1,4 +1,4 @@
-#Kafkaish
+# Kafkaish
 
 An experiment with an Apache-Kafka-like publish/subscribe mechanism based on MongoDB.
 
@@ -10,7 +10,7 @@ A. Actually I _really_ want to, and of course you should - if you have the resou
 
 Connect and create a topic:
 
-```
+```javascript
 const kafkaish = require('kafkaish')
     , connection = kafkaish('mongodb://localhost:27017/kafkaish')
 connection.on('connect', function(){
@@ -20,18 +20,17 @@ connection.on('connect', function(){
   })
 })
 connection.connect()
-
 ```
 
 Publish messages to your topic fire-and-forget style:
 
-```
+```javascript
 topic.publish('event-name',{foo:'bar'})
 ```
 
 Publish messages and receive a callback for confirmation of publishing:
 
-```
+```javascript
 topic.publish('event-name',{foo:bar},function(err){
   if (err) {
     // not published! try again or whatever
@@ -43,7 +42,7 @@ topic.publish('event-name',{foo:bar},function(err){
 
 Subscribe to receive specific events published from now on until you unsubscribe or otherwise disconnect:
 
-```
+```javascript
 topic.subscribe('event-name',{},function(ev,msg){
   // handle event
 })
@@ -51,7 +50,7 @@ topic.subscribe('event-name',{},function(ev,msg){
 
 Use the returned subscription object to unsubscribe when you've had enough:
 
-```
+```javascript
 const count = 0
 const subscription = topic.subscribe('event-name',{},function(ev,msg){
   count++
@@ -63,7 +62,7 @@ const subscription = topic.subscribe('event-name',{},function(ev,msg){
 
 Subscribe to receive ALL events published from now on until you unsubscribe or otherwise disconnect:
 
-```
+```javascript
 topic.subscribe(null,{},function(ev,msg){
   // handle event
 })
@@ -71,7 +70,7 @@ topic.subscribe(null,{},function(ev,msg){
 
 Subscribe a durable subscription receive specific events. You can unsubscribe/disconnect and come back later to collect events that occurred while you were away:
 
-```
+```javascript
 topic.subscribe(null,{name:'durable-subscriber-1'},function(ev,msg,ack){
   // ... do some cool stuff
   // ...
@@ -81,7 +80,7 @@ topic.subscribe(null,{name:'durable-subscriber-1'},function(ev,msg,ack){
 
 Subscribe a durable subscription receive specific events, and replay the backlog of events that already occurred. You can unsubscribe/disconnect and come back later to collect events that occurred while you were away:
 
-```
+```javascript
 topic.subscribe(null,{name:'durable-subscriber-1',replay:true},function(ev,msg,ack){
   // ... do some cool stuff
   // ...
