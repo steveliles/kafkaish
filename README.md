@@ -16,6 +16,12 @@ A. Actually I _really_ want to, and of course you should - if you have the resou
 
 ## Usage
 
+Install:
+
+```
+npm install kafkaish
+```
+
 Bring kafkaish into scope:
 
 ```javascript
