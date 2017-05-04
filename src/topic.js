@@ -13,22 +13,20 @@ class Topic extends EventEmitter {
     this.connection = connection;
     this.closed = false;
     this.listening = null;
-    this.name = name || 'kafkaesque';
+    this.name = name || 'kafkaish';
 
     this.setMaxListeners(0);
-
-    process.nextTick(this.create.bind(this))
   }
   publish(event, message, callback){
     this.collection.insert({
       event: event,
       message: message
     }, (err, docs) => {
-      if (callback) {
+      if (callback){
         if (err) {
           callback(err)
         } else {
-          callback(null, docs.ops[0]);
+          callback(err,docs.ops[0]);
         }
       }
     })
@@ -247,26 +245,27 @@ class Topic extends EventEmitter {
     })
   }
   create() {
-    if (!this.connection.db) {
-      this.emit('not-connected')
-    } else {
-      this.ensureCollection(this.name, this.opts, (cerr,collection)=>{
-        if (cerr) {
-          this.emit('error',cerr)
-        } else {
-          this.collection = collection
-          this.ensureCollection(`${this.name}_subscribers`, SUBSCRIBER_COLLECTION_OPTS, (serr,subscribersCollection)=>{
-            if (serr){
-              this.emit('error',serr)
-            } else {
-              this.subscribersCollection = subscribersCollection
-              this.emit('ready')
-            }
-          })
-        }
-      })
-    }
-    return this
+    return new Promise((resolve,reject)=>{
+      if (!this.connection.db) {
+        reject(new Error('not connected'))
+      } else {
+        this.ensureCollection(this.name, this.opts, (cerr,collection)=>{
+          if (cerr) {
+            reject(cerr)
+          } else {
+            this.collection = collection
+            this.ensureCollection(`${this.name}_subscribers`, SUBSCRIBER_COLLECTION_OPTS, (serr,subscribersCollection)=>{
+              if (serr){
+                reject(serr)
+              } else {
+                this.subscribersCollection = subscribersCollection
+                resolve(this)
+              }
+            })
+          }
+        })
+      }
+    })
   }
 }
 

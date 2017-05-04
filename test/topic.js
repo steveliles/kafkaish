@@ -46,115 +46,120 @@ describe('topic', function() {
   })
 
   describe('create', function() {
-    it('emits "not-connected" if not connected', function(done) {
+    it('fails with error if not connected', function(done) {
       // we didn't call connect ...
-      const topic = connection.topic('test-create')
-      topic.on('not-connected', done)
-    })
-    it('emits "ready" when topic infrastructure is prepared', function(done) {
-      connection
-        .on('connect', ()=>{
-          const topic = connection.topic('test-create')
-          topic.on('ready', ()=>{
+      connection.prepareTopic('test-create')
+        .then(topic => done(new Error('should not have worked, we arent connected!')))
+        .catch(err => {
+          if (err.message === 'not connected') {
             done()
-          })
+          } else {
+            done(err)
+          }
+        }) // expected error
+    })
+    it('resolves promise when topic infrastructure is prepared', function(done) {
+      connection.connect()
+        .then(conn => {
+          conn.prepareTopic('test-create')
+            .then(topic => done())
+            .catch(done)
         })
-        .connect()
+        .catch(done)
     })
   })
 
   describe('publish', function(){
-    it('publishes message and calls back with success/failure', function(done){
-      connection
-        .on('connect', ()=>{
-          const topic = connection.topic('test-publish')
-          topic.on('ready', ()=>{
-            topic.publish('some-event',{},()=>{
-              done()
+    it('publishes message and calls back on success/failure', function(done){
+      connection.connect()
+        .then(conn => {
+          conn.prepareTopic('test-publish')
+            .then(topic => {
+              topic.publish('some-event',{},(err,result)=>{
+                done()
+              })
             })
-          })
         })
-        .connect()
     })
   })
 
   describe('subscribe', function(){
     it('allows non-durable subscription by omitting name from opts', function(done){
-      connection
-        .on('connect', ()=>{
-          const topic = connection.topic('test-subscribe')
-          topic.on('ready', ()=>{
-            topic.publish('my-event',{number:1},()=>{
-              const subscription = topic.subscribe('my-event',{},(event,message)=>{
-                // non-durable, should not see the previous message
-                if (message.number === 2) {
-                  subscription.unsubscribe(done)
-                } else {
-                  done(new Error("should have received event number 2"))
-                }
+      connection.connect()
+        .then(conn => {
+          conn.prepareTopic('test-subscribe')
+            .then(topic => {
+              topic.publish('my-event',{number:1},()=>{
+                const subscription = topic.subscribe('my-event',{},(event,message)=>{
+                  // non-durable, should not see the previous message
+                  if (message.number === 2) {
+                    subscription.unsubscribe(done)
+                  } else {
+                    done(new Error("should have received event number 2"))
+                  }
+                })
+                topic.publish('my-event',{number:2})
               })
-              topic.publish('my-event',{number:2})
             })
-          })
+            .catch(done)
         })
-        .connect()
     })
     it ('allows durable subscription and replay to named subscribers in opts', function(done){
       let didReceiveMessage1 = false
-      connection
-        .on('connect', ()=>{
-          const topic = connection.topic('test-subscribe')
-          topic.on('ready', ()=>{
-            topic.publish('my-event',{number:1},()=>{
-              topic.subscribe('my-event',{
-                name:'a-durable-subscriber',
-                replay: true
-              },(event,message,ack)=>{
-                if (message.number === 1) {
-                  didReceiveMessage1 = true
-                  ack()
-                }
-                if (message.number === 2) {
-                  if (didReceiveMessage1) {
-                    done()
-                  } else {
-                    done(new Error("should have received message 1 first!"))
+      connection.connect()
+        .then(conn => {
+          conn.prepareTopic('test-subscribe')
+            .then(topic => {
+              topic.publish('my-event',{number:1},()=>{
+                topic.subscribe('my-event',{
+                  name:'a-durable-subscriber',
+                  replay: true
+                },(event,message,ack)=>{
+                  if (message.number === 1) {
+                    didReceiveMessage1 = true
+                    ack()
                   }
-                }
+                  if (message.number === 2) {
+                    if (didReceiveMessage1) {
+                      done()
+                    } else {
+                      done(new Error("should have received message 1 first!"))
+                    }
+                  }
+                })
+                topic.publish('my-event',{number:2})
               })
-              topic.publish('my-event',{number:2})
             })
-          })
+            .catch(done)
         })
-        .connect()
     })
     it ('doesnt receive more events after unsubscribe', function(done){
       let received = false
-      connection
-        .on('connect', ()=>{
-          const topic = connection.topic('test-subscribe')
-          topic.on('ready', ()=>{
-            topic.publish('my-event',{number:1},()=>{
-              const subscription = topic.subscribe('my-event',{
-                name:'a-durable-subscriber',
-                replay: true
-              },(event,message,ack)=>{
-                if (received) {
-                  done(new Error('only expected to receive one message!'))
-                } else {
-                  received = true
-                  ack()
-                  subscription.unsubscribe(()=>{
-                    topic.publish('my-event',{number:2},()=>{
-                      setTimeout(done,500)
+      connection.connect()
+        .then(conn => {
+          conn.prepareTopic('test-subscribe')
+            .then(topic => {
+              topic.publish('my-event',{number:1},()=>{
+                const subscription = topic.subscribe('my-event',{
+                  name:'a-durable-subscriber',
+                  replay: true
+                },(event,message,ack)=>{
+                  if (received) {
+                    done(new Error('only expected to receive one message!'))
+                  } else {
+                    received = true
+                    ack()
+                    subscription.unsubscribe(()=>{
+                      topic.publish('my-event',{number:2},()=>{
+                        setTimeout(done,500)
+                      })
                     })
-                  })
-                }
+                  }
+                })
               })
             })
-          })
+            .catch(done)
         })
-        .connect()
     })
     it ('durable subscribers can replay from last acknowledged position', function(done){
       const receive = (topic,first,last,then) => {
@@ -194,21 +199,21 @@ describe('topic', function() {
           }
         })
       }
-      connection
-        .on('connect', ()=>{
-          const topic = connection.topic('test-subscribe')
-          topic.on('ready', ()=>{
-            publish(topic,1,6,()=>{
-              receive(topic,1,5,()=>{
-                publish(topic,7,8,()=>{
-                  receive(topic,6,10,done)
-                  publish(topic,9,10)
+      connection.connect()
+        .then(conn => {
+          conn.prepareTopic('test-subscribe')
+            .then(topic => {
+              publish(topic,1,6,()=>{
+                receive(topic,1,5,()=>{
+                  publish(topic,7,8,()=>{
+                    receive(topic,6,10,done)
+                    publish(topic,9,10)
+                  })
                 })
               })
             })
-          })
         })
-        .connect()
+        .catch(done)
     })
   })
 
