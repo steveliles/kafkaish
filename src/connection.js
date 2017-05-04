@@ -15,26 +15,41 @@ class Connection extends EventEmitter {
     if (this.uri.collection) {
       // uri is already a db instance
       this.db = this.uri;
+      return new Promise((resolve,reject)=>{
+        resolve(this)
+      })
     } else {
-      MongoClient.connect(this.uri, this.opts, (err, db) => {
-        if (err) {
-          this.emit('error', err)
-        } else {
-          this.db = db;
-          this.emit('connect', this);
-          db.on('error', (err) => {
-            this.emit('error', err);
-          });
-        }
-      });
+      return new Promise((resolve,reject)=>{
+        MongoClient.connect(this.uri, this.opts, (err, db) => {
+          if (err) {
+            reject(err)
+          } else {
+            this.db = db;
+            db.on('error', (err) => {
+              this.emit('error', err);
+            });
+            resolve(this)
+          }
+        });
+      })
     }
     return this
   }
-  topic(name, opts={}){
-    if (!this.topics[name] || this.topics[name].closed) {
-      this.topics[name] = new Topic(this, name, opts);
-    }
-    return this.topics[name];
+  prepareTopic(name, opts={}){
+    return new Promise((resolve,reject)=>{
+      if (!this.topics[name] || this.topics[name].closed) {
+        const t = new Topic(this, name, opts);
+        t.create()
+          .then(topic => {
+            this.topics[name] = topic
+            resolve(topic)
+          })
+          .catch(err => reject(err))
+      } else {
+        resolve(this.topics[name]);
+      }
+    })
+
   }
   close(errBack){
     this.db.close(errBack)

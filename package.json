@@ -4,7 +4,7 @@
   "description": "A publish-subscribe messaging system with durable topics on MongoDB. A poor-man's Apache Kafka, if you like.",
   "main": "index.js",
   "scripts": {
-    "compile": "./node_modules/.bin/babel --presets es2015 -d lib/ src/",
+    "compile": "./node_modules/.bin/babel --presets es2015 -d lib/ src/ --source-maps",
     "test": "npm run compile && ./node_modules/mocha/bin/mocha",
     "prepublish": "npm run test"
   },

@@ -16,18 +16,22 @@ A. Actually I _really_ want to, and of course you should - if you have the resou
 
 ## Usage
 
-Connect and create a topic:
+Bring kafkaish into scope:
 
 ```javascript
 const kafkaish = require('kafkaish')
-    , connection = kafkaish('mongodb://localhost:27017/kafkaish')
-connection.on('connect', function(){
-  const topic = connection.topic('my_topic')
-  topic.on('ready', function(){
-    // use your topic
+```
+
+Connect and create a topic:
+
+```javascript
+kafkaish('mongodb://localhost:27017/kafkaish').connect()
+  .then(conn => {
+    conn.prepareTopic('my_topic')
+      .then(topic => {
+        // use your topic
+      })
   })
-})
-connection.connect()
 ```
 
 Publish messages to your topic fire-and-forget style:
