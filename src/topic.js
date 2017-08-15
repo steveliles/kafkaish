@@ -17,10 +17,17 @@ class Topic extends EventEmitter {
 
     this.setMaxListeners(0);
   }
+  close() {
+    this.listening = false
+    if (this.cursor)
+      this.cursor.close()
+  }
   publish(event, message, callback){
     this.collection.insert({
       event: event,
       message: message
+    }, {
+      safe: true
     }, (err, docs) => {
       if (callback){
         if (err) {
@@ -43,18 +50,19 @@ class Topic extends EventEmitter {
       return
     this.listening = true
     this.latest(since, (err, latest)=>{
-      const cursor = this.collection
+      this.cursor = this.collection
         .find({
           _id: {
             $gt: latest._id
           }
         })
-      cursor.addCursorFlag('tailable',true)
-      cursor.addCursorFlag('awaitData',true)
-      cursor.addCursorFlag('noCursorTimeout',true)
+      this.cursor.addCursorFlag('tailable',true)
+      this.cursor.addCursorFlag('awaitData',true)
+      this.cursor.addCursorFlag('noCursorTimeout',true)
       const next = (err,doc) => {
         if (err) {
-          this.emit('error',err)
+          if (this.listening)
+            this.emit('error',err)
           // todo: maybe need to try to recover - e.g. reconnect
         } else {
           if (!doc) {
@@ -62,43 +70,47 @@ class Topic extends EventEmitter {
             // reason we'll see no doc here but it isn't the end of the cursor?
             this.emit('warn','no document')
           } else {
-            this.emit(doc.event, doc.message)
+            this.emit(doc.event, doc)
             this.emit('message', doc);
-            process.nextTick(more)
+            setImmediate(more)
           }
         }
       }
       const more = () => {
         try {
-          cursor.nextObject(next);
+          this.cursor.nextObject(next);
         } catch (err) {
-          console.error(err)
+          if (this.listening)
+            console.error(err)
         }
       }
-      process.nextTick(more)
+      setImmediate(more)
     })
   }
   join(since, event, opts, callback){
     this.listen(since)
+    let cb = undefined
     if (opts.name){
       // durable subscription so the subscriber needs to acknowledge
       // each message as having been processed successfully
-      this.on(event, (msg)=>{
-        callback(event, msg, ()=>{
-          this.ack(opts.name,msg._id)
+      cb = (doc) => {
+        callback(event, doc.message, (done)=>{
+          this.ack(opts.name,doc._id,done)
         })
-      })
+      }
     } else {
       // subscriber doesn't want durable subscription, so no
       // don't bother with the acknowledgement callback
-      this.on(event, (msg)=>{
-        callback(event,msg)
-      })
+      cb = (doc) =>{
+        callback(event, doc.message)
+      }
     }
+    this.on(event, cb)
     // todo: stop the listener when the last subscriber is removed
     return {
       unsubscribe: (done) => {
-        this.removeListener(event, callback)
+        this.removeListener(event, cb)
+        // todo: when last listener is removed, close the cursor!
         done()
       }
     }
@@ -159,33 +171,32 @@ class Topic extends EventEmitter {
         } else {
           const ev = (event === null ? 'message' : event)
           if ((ev === 'message') || (ev === doc.event)) {
-            process.nextTick(()=>{ // nice clean stack ... but is it worth it?
-              callback(doc.event, doc.message, (done)=>{
-                this.ack(opts.name, doc._id, (err)=>{
-                  prev = doc
-                  // todo: retry the ack until it succeeds before
-                  // moving on to the next doc ?
-                  if (subscription.subscribed) {
-                    process.nextTick(more)
-                  } else {
-                    cursor.close()
-                  }
-                  if (done) {
-                    done(err)
-                  }
-                })
+            callback(doc.event, doc.message, (done)=>{
+              this.ack(opts.name, doc._id, (err)=>{
+                prev = doc
+                // todo: retry the ack until it succeeds before
+                // moving on to the next doc ?
+                if (done) {
+                  done(err)
+                }
+                if (subscription.subscribed) {
+                  setImmediate(more)
+                } else {
+                  cursor.close()
+                }
               })
             })
           } else {
-            process.nextTick(more)
+            setImmediate(more)
           }
         }
       }
     }
     const more = () => {
-      cursor.nextObject(next);
+      if (cursor && !cursor.isClosed())
+        cursor.nextObject(next);
     }
-    process.nextTick(more)
+    setImmediate(more)
     return subscription
   }
   ack(name,id,callback){
@@ -195,7 +206,8 @@ class Topic extends EventEmitter {
       name: name,
       last: id
     }, {
-     upsert: true
+     upsert: true,
+     safe: true
    }, (err,result) => {
       if (callback) {
         if (err) {

@@ -1,6 +1,6 @@
 {
   "name": "kafkaish",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A publish-subscribe messaging system with durable topics on MongoDB. A poor-man's Apache Kafka, if you like.",
   "main": "index.js",
   "scripts": {
