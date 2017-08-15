@@ -190,6 +190,7 @@ describe('topic', function() {
             topic.close()
             done(new Error(`${first}-${last} saw ${count} events but expected only ${expect}`))
           } else {
+            ack()
             if (count === 1) {
               if (message.number !== first){
                 topic.close()
@@ -206,7 +207,6 @@ describe('topic', function() {
                   then()
               })
             }
-            ack()
           }
         })
       }
