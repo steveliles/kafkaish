@@ -1,6 +1,6 @@
 # Kafkaish
 
-Stability: _very unstable / experimental._
+Stability: _very unstable / experimental._ (that said, this has now been used in production for > 1 year with no issues!)
 
 Durable message queues are handy when you only have a few consumers, but they're a bit unwieldy and wasteful when you have many consumers or consumers come and go over time.
 
